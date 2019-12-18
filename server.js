@@ -64,8 +64,8 @@ fccTestingRoutes(app);
 
 db.once("open", function onDBOpen() {
   //Routing for API
-  apiRoutes(app);
-
+  app.use(apiRoutes);
+  
   //Start our server and tests!
   app.listen(process.env.PORT || 3000, function() {
     console.log("Listening on port " + (process.env.PORT || 3000));
