@@ -65,7 +65,15 @@ fccTestingRoutes(app);
 db.once("open", function onDBOpen() {
   //Routing for API
   app.use(apiRoutes);
-  
+
+  //404 Not Found Middleware
+  app.use(function(req, res, next) {
+    res
+      .status(404)
+      .type("text")
+      .send("Not Found");
+  });
+
   //Start our server and tests!
   app.listen(process.env.PORT || 3000, function() {
     console.log("Listening on port " + (process.env.PORT || 3000));
@@ -82,14 +90,6 @@ db.once("open", function onDBOpen() {
       }, 1500);
     }
   });
-});
-
-//404 Not Found Middleware
-app.use(function(req, res, next) {
-  res
-    .status(404)
-    .type("text")
-    .send("Not Found");
 });
 
 module.exports = app; //for testing
