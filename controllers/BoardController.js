@@ -36,11 +36,92 @@ function postThread(req, res) {
 }
 
 function postReply(req, res) {
-  res.send("Not yet implemented");
+  Board.findOneAndUpdate(
+    {
+      name: req.params.board,
+      "threads._id": req.body.thread_id
+    },
+    {
+      $push: {
+        "threads.$.replies": {
+          text: req.body.text,
+          delete_password: req.body.delete_password,
+          reported: false,
+          created_on: new Date()
+        }
+      }
+    },
+    {
+      useFindAndModify: false
+    },
+    function postReplyCallback(err, doc) {
+      if (err) {
+        res.send(err);
+      } else {
+        res.redirect(`/b/${req.params.board}/${req.body.thread_id}`);
+      }
+    }
+  );
 }
 
 function getBoard(req, res) {
-  res.send("Not yet implemented");
+  Board.aggregate([
+    {
+      '$match': {
+        'name': 'general'
+      }
+    }, {
+      '$unwind': {
+        'path': '$threads'
+      }
+    }, {
+      '$unwind': {
+        'path': '$threads.replies'
+      }
+    }, {
+      '$match': {
+        'threads.reported': false, 
+        'threads.replies.reported': false
+      }
+    }, {
+      '$sort': {
+        'threads.bumped_on': 1, 
+        'threads.replies.created_on': 1
+      }
+    }, {
+      '$group': {
+        '_id': '$threads._id', 
+        'text': {
+          '$first': '$threads.text'
+        }, 
+        'created_on': {
+          '$first': '$threads.created_on'
+        }, 
+        'bumped_on': {
+          '$first': '$threads.bumped_on'
+        }, 
+        'replies': {
+          '$push': {
+            'text': '$threads.replies.text', 
+            '_id': '$threads.replies._id', 
+            'created_on': '$threads.replies.created_on'
+          }
+        }
+      }
+    }, {
+      '$limit': 10
+    }
+  ], function boardsCallback(err, docs){
+    if(err){
+      res.send(err);
+    }
+    else {
+      docs.map((doc) => {
+        doc.replies.splice(3);
+      });
+      res.json(docs);
+    }
+  });
 }
 
 function getThread(req, res) {
