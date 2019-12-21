@@ -36,18 +36,22 @@ function postThread(req, res) {
 }
 
 function postReply(req, res) {
+  let d = new Date();
   Board.findOneAndUpdate(
     {
       name: req.params.board,
       "threads._id": req.body.thread_id
     },
     {
+      $set: {
+        "threads.$.bumped_on": d
+      },
       $push: {
         "threads.$.replies": {
           text: req.body.text,
           delete_password: req.body.delete_password,
           reported: false,
-          created_on: new Date()
+          created_on: d
         }
       }
     },
@@ -171,12 +175,14 @@ function getThread(req, res) {
 }
 
 function deleteThread(req, res) {
-  Board.update({
+  Board.updateOne({
     name: req.params.board
   }, {
     "$pull": {
-      "_id": new ObjectId(req.body.thread_id),
-      "delete_password": req.body.delete_password
+      "threads":{
+        "_id": new ObjectId(req.body.thread_id),
+        "delete_password": req.body.delete_password
+      }
     }
   }, function deleteThreadCallback(err, raw){
     if(err){
@@ -189,14 +195,14 @@ function deleteThread(req, res) {
 }
 
 function deleteReply(req, res) {
-  Board.update({
-    name: req.params.board
+  Board.updateOne({
+    name: req.params.board,
+    "threads._id": new ObjectId(req.body.thread_id),
   }, {
     "$pull": {
-      "threads":{
-        "_id": new ObjectId(req.body.thread_id),
-        "replies._id": new ObjectId(req.body.reply_id),
-        "replies.delete_password": req.body.delete_password
+      "threads.$.replies":{
+        "_id": new ObjectId(req.body.reply_id),
+        "delete_password": req.body.delete_password
     }
   }
   }, function deleteThreadCallback(err, raw){
