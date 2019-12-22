@@ -72,62 +72,44 @@ function getBoard(req, res) {
   Board.aggregate(
     [
       {
-        $match: {
-          name: req.params.board
+        '$match': {
+          'name': req.params.board
         }
-      },
-      {
-        $unwind: {
-          path: "$threads"
+      }, {
+        '$unwind': {
+          'path': '$threads'
         }
-      },
-      {
-        $unwind: {
-          path: "$threads.replies"
+      }, {
+        '$sort': {
+          'threads.bumped_on': -1
         }
-      },
-      {
-        $match: {
-          "threads.reported": false,
-          "threads.replies.reported": false
-        }
-      },
-      {
-        $sort: {
-          "threads.bumped_on": 1,
-          "threads.replies.created_on": 1
-        }
-      },
-      {
-        $group: {
-          _id: "$threads._id",
-          text: {
-            $first: "$threads.text"
-          },
-          created_on: {
-            $first: "$threads.created_on"
-          },
-          bumped_on: {
-            $first: "$threads.bumped_on"
-          },
-          replies: {
-            $push: {
-              text: "$threads.replies.text",
-              _id: "$threads.replies._id",
-              created_on: "$threads.replies.created_on"
-            }
+      }, {
+        '$limit': 10
+      }, {
+        '$group': {
+          '_id': '$threads._id', 
+          'text': {
+            '$first': '$threads.text'
+          }, 
+          'bumped_on': {
+            '$first': '$threads.bumped_on'
+          }, 
+          'created_on': {
+            '$first': '$threads.created_on'
+          }, 
+          'replies': {
+            '$first': '$threads.replies'
           }
         }
-      },
-      {
-        $limit: 10
       }
     ],
     function boardsCallback(err, docs) {
       if (err) {
         res.send(err);
       } else {
+        docs.sort((a, b) => Date.parse(b.bumped_on) - Date.parse(a.bumped_on));
         docs.map(doc => {
+          doc.replies.sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on));
           doc.replies.splice(3);
         });
         res.json(docs);

@@ -32,7 +32,7 @@ mongoose.connect(process.env.DB, {
   useNewUrlParser: true
 });
 
-let db = mongoose.connection;
+var db = mongoose.connection;
 
 db.on("err", function onDBError(err) {
   console.log("Error connecting to database");
@@ -92,4 +92,7 @@ db.once("open", function onDBOpen() {
   });
 });
 
-module.exports = app; //for testing
+module.exports = {
+  app,
+  db
+}; //for testing
